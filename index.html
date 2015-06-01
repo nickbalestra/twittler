@@ -1,27 +1,235 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8">
     <script src="jquery.js"></script>
     <script src="data_generator.js"></script>
+    <script src="observe.js"></script>
+    <script src="moment.js"></script>
+
+    <link href='http://fonts.googleapis.com/css?family=Source+Code+Pro' rel='stylesheet' type='text/css'>
+    <style>
+        body {
+          font-family: 'Source Code Pro';
+          color: #fff;
+          background: #272822;
+        }
+        a {
+          color: #fff;
+          text-decoration: underline;
+          cursor: pointer;
+        }
+      </style>
   </head>
   <body>
     <script>
 
       $(document).ready(function(){
+
+        // Ascii Art Font, built using http://goo.gl/H8XLta
+        var asciiFont = {
+          a:['╔═╗', '╠═╣', '╩ ╩'],
+          b:['╔╗ ', '╠╩╗', '╚═╝'],
+          c:['╔═╗', '║  ', '╚═╝'],
+          d:['╔╦╗', '&nbsp;║║', '═╩╝'],
+          e:['╔═╗', '║╣ ', '╚═╝'],
+          f:['╔═╗', '╠╣ ', '╚  '],
+          g:['╔═╗', '║ ╦', '╚═╝'],
+          h:['╦ ╦', '╠═╣', '╩ ╩'],
+          i:['&nbsp;╦&nbsp;','&nbsp;║&nbsp;', '&nbsp;╩&nbsp;'],
+          j:['&nbsp;╦&nbsp;', '&nbsp;║&nbsp;', '╚╝&nbsp;&nbsp;'],
+          k:['╦╔═', '╠╩╗', '╩ ╩'],
+          l:['╦&nbsp;&nbsp;', '║&nbsp;&nbsp;', '╩═╝'],
+          m:['╔╦╗', '║║║', '╩ ╩'],
+          n:['╔╗╔', '║║║', '╝╚╝'],
+          o:['╔═╗', '║ ║', '╚═╝'],
+          p:['╔═╗', '╠═╝', '╩&nbsp;&nbsp;'],
+          q:['╔═╗&nbsp;', '║═╬╗', '╚═╝╚'],
+          r:['╦═╗', '╠╦╝', '╩╚═'],
+          s:['╔═╗', '╚═╗', '╚═╝'],
+          t:['╔╦╗', '&nbsp;║&nbsp;', '&nbsp;╩&nbsp;'],
+          u:['╦ ╦', '║ ║', '╚═╝'],
+          v:['╦  ╦', '╚╗╔╝', '&nbsp;╚╝&nbsp;'],
+          w:['╦ ╦', '║║║', '╚╩╝'],
+          x:['═╗ ╦', '╔╩╦╝', '╩ ╚═'],
+          y:['╦ ╦', '╚╦╝', '&nbsp;╩&nbsp;'],
+          z:['╔═╗', '╔═╝', '╚═╝']
+        };
+
         var $body = $('body');
         $body.html('');
+        var tick;
 
-        var index = streams.home.length - 1;
-        while(index >= 0){
-          var tweet = streams.home[index];
-          var $tweet = $('<div></div>');
-          $tweet.text('@' + tweet.user + ': ' + tweet.message);
-          $tweet.appendTo($body);
-          index -= 1;
+        // Stream source
+        var src = streams.home;
+        var url = window.location.href;
+        if (url.match(/user=(.*)/) && streams.users[url.match(/user=(.*)/)[1]]) {
+            var user = url.match(/user=(.*)/)[1];
+            src = streams.users[user];
         }
 
-      });
+        // UI
+        var width = 60;
 
+        var line =  function(char, start, end){
+          var line = Array(width).join(char);
+          var array = line.split('');
+          if (start) {
+            array.shift();
+            array.unshift(start);
+          }
+          if (end) {
+            array.pop();
+            array.push(end);
+          }
+          return array.join('');
+        }
+
+        var timeLine =  function(char, time){
+                  var line = '';
+                  for (var i = 0; i < width/2 - (time.toString().length)/2 - 1; i++) {
+                    line += char;
+                  }
+                  line += time;
+                  for (var j = 0; j < width/2 - (time.toString().length)/2 - 1; j++) {
+                    line += char;
+                  }
+                  return line;
+                };
+
+        var br = '<br>';
+
+        var centeredText = function(delimiter, text) {
+          var lineLeft = Array(width/2 - text.length/2).join('&nbsp;');
+          var lineRight = Array(width/2 - text.length/2).join('&nbsp;');
+
+           var line = lineLeft + text + lineRight;
+           var array = line.split(';');
+            if (delimiter) {
+              if (delimiter.length > (width/2 - text.length/2)) {
+                delimiter = delimiter.split('');
+                delimiter.length = width/2 - text.length/2 - 4;
+                delimiter = delimiter.join('');
+              }
+              array.splice(0, delimiter.length, delimiter);
+              array.splice(array.length - delimiter.length, delimiter.length, delimiter);
+            }
+          return array.join('') + br;
+        };
+
+
+
+
+        var init = function(){
+          // visitor = prompt('Enter your Twitter Username','guest');
+          visitor = "Nick";
+          // UI Constructors
+
+          var logo = '╔╦╗╦ ╦╦╔╦╗╔╦╗╦  &nbsp;╔═╗╦═╗<br>&nbsp;║ ║║║║ ║&nbsp;  ║ ║  &nbsp;║╣ ╠╦╝<br>&nbsp;╩ ╚╩╝╩ ╩  &nbsp;╩ ╩═╝╚═╝╩╚═'
+
+          logo = logo + Array(width-22).join('═');
+
+          var header = '' + line('=') + br +
+            centeredText('||', 'MENU') +
+            line("=") + br + line('═', '╔');
+
+          var feedHeader = '' + line('=') + br +
+            centeredText('||', 'FEED') +
+            line("=") + br;
+
+          var nav = '║ &nbsp;Welcome ' +
+            visitor +'!' + br +
+            '║ &nbsp;<a id="tweet">Write a new Tweet</a>' + br ;
+          var navUser = '║ &nbsp;<a href="index.html"><< Home</a>' + br ;
+
+          $('<div class="logo">'+ logo +'</div>').prependTo($body);
+
+          $('<div class="header">'+header+'</div>').appendTo($body);
+          if (user) {
+            $('<div class="nav">'+ navUser +'</div>' + line('=')).appendTo($body);
+          } else {
+            $('<div class="nav">'+ nav +'</div>' + line('=')).appendTo($body);
+          }
+          $('<div class="feedNav"></div>').appendTo($body);
+          $('<div class="feed"></div>').appendTo($body);
+
+          $('<span>'+ feedHeader +'</span>').appendTo($('.feedNav'));
+          $('<div id="load-more">'+ line('═', '╔') + br + '║ &nbsp;</div>').hide().appendTo($('.feedNav'));
+          $('<a id="load-btn"></a>').appendTo($('#load-more'));
+          $('<span>'+ line('═', '╚') +'</span>').appendTo($('.nav'));
+          $('#load-more').append('' + br + line('═', '╚'));
+
+          fetchNewTweets(user);
+
+          $( "#load-btn" ).click(function() {
+            fetchNewTweets(user);
+          });
+
+          $( "#tweet" ).click(function() {
+            compose();
+          });
+
+          // Using the object observer polyfill from polymer to safely watch
+          // the streams.home object: https://github.com/Polymer/observe-js
+          // Learn about the object observer API: https://goo.gl/ideGwf
+          var countNewTweets = new ObjectObserver(src);
+
+          countNewTweets.open(function(added, removed, changed) {
+            var count = changed.length;
+
+             if (count > 0 && count < 2 ) {
+
+              $('#load-btn').text('View ' + count + ' new Tweet');
+
+              $('#load-more').show();
+
+             } else if (count > 1) {
+              $('#load-btn').text('View ' + count + ' new Tweets');
+             } else {
+              $('#load-more').hide();
+             }
+          });
+        }
+
+        var fetchNewTweets = function(user){
+          var index = src.length - 1;
+          var buffer = [];
+          while(index >= 0){
+            buffer.push(src.pop());
+            //displayTweet(tweet);
+            index -= 1;
+          }
+          buffer.sort(function(a,b){
+            return Date.parse(a.created_at) - Date.parse(b.created_at);
+          }).forEach(displayTweet);
+          //console.log(buffer);
+        };
+
+        var displayTweet = function(tweet){
+          var $tweet = $('<div></div>');
+          var initial = tweet.user[0].toLowerCase();
+          var timeStamp = moment(tweet.created_at).format('LLL');
+          var line0 = timeLine('-', moment(tweet.created_at).fromNow());
+          var line1 = '| ' + asciiFont[initial][0] + '&ensp; <span class="link">@</span><a href="?user='+ tweet.user +'">'+ tweet.user +'</a>';
+          var line2 = '| ' + asciiFont[initial][1] + '&ensp; ' + tweet.message;
+          //$tweet.append('@<a href="?user='+ tweet.user +'">'+ tweet.user +'</a>');
+
+          var line3 = '| ' + asciiFont[initial][2] + '&ensp; ' + timeStamp;
+          var line4 = line('-');
+          $tweet.append(line0 + '<br>' + line1 + '<br>' + line2 + '<br>' + line3 + br + line4);
+          $tweet.prependTo($('.feed'));
+        };
+
+        var compose = function(){
+          var msg = prompt('What\'s happening?', '');
+          if (!streams.users[visitor]) {
+            streams.users[visitor] = [];
+          }
+          writeTweet(msg);
+        };
+
+        init();
+      });
     </script>
   </body>
 </html>
